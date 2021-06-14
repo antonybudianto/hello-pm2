@@ -19,7 +19,7 @@ const service = process.argv[2];
 
 pm2.connect(true, function (err) {
   if (err) {
-    console.error(err);
+    console.error("error connect", err);
     process.exit(2);
   }
 
@@ -39,9 +39,11 @@ pm2.connect(true, function (err) {
 
     process.on("SIGHUP", () => {
       console.log("Lite PM2 SIGHUP reloading...");
-      pm2.reload("all", {}, () => {
+      pm2.reload("all", {}, (err) => {
         pm2.reset("all");
       });
+      // pm2.list((_, lst) => {
+      // });
     });
 
     process.on("SIGTERM", () => {
@@ -65,10 +67,13 @@ pm2.connect(true, function (err) {
         script: "boot.js",
         name: service || "lite",
         exec_mode: "cluster",
-        instances: 0,
-        output: "NULL",
-        error: "NULL",
-        max_memory_restart: LIMIT,
+        instances: 4,
+        // pmx: false,
+        // output: "NULL",
+        // error: "NULL",
+        output: "/dev/stdout",
+        error: "/dev/stderr",
+        max_memory_restart: "5M",
       },
       function (err2, proc) {
         pm2.disconnect();
@@ -80,6 +85,7 @@ pm2.connect(true, function (err) {
         });
 
         if (err2) {
+          console.log("error2", err2);
           throw err2;
         }
       }
