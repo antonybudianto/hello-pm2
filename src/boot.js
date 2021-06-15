@@ -3,7 +3,12 @@ process.on("SIGTERM", () => {
 });
 
 process.on("SIGINT", () => {
-  console.log("sigint anak");
+  process.send({
+    type: "process:childint",
+    data: {
+      code: 0,
+    },
+  });
   process.exit(0);
 });
 

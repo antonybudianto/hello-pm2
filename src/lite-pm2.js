@@ -17,6 +17,21 @@ const LIMIT = getMemoryLimit();
 
 const service = process.argv[2];
 
+let count = 0;
+
+function reload() {
+  const start = Date.now();
+  pm2.reload("all", {}, (e1) => {
+    if (e1) {
+      console.log("e1-zombie", e1);
+    } else {
+      console.log("e1-aman");
+    }
+    console.log("donereload", Date.now() - start);
+    count = 0;
+  });
+}
+
 pm2.connect(true, function (err) {
   if (err) {
     console.error("error connect", err);
@@ -39,11 +54,16 @@ pm2.connect(true, function (err) {
 
     process.on("SIGHUP", () => {
       console.log("Lite PM2 SIGHUP reloading...");
-      pm2.reload("all", {}, (err) => {
-        pm2.reset("all");
-      });
-      // pm2.list((_, lst) => {
-      // });
+      console.log("count=", count);
+      if (count > 0) {
+        console.log("======= PLEASE WAIT FOR RELOAD =================");
+        setTimeout(() => {
+          reload();
+        }, 2000);
+      } else {
+        console.log("======= DIRECT RELOAD =================");
+        reload();
+      }
     });
 
     process.on("SIGTERM", () => {
@@ -81,6 +101,10 @@ pm2.connect(true, function (err) {
         pm2.launchBus((err, bus) => {
           bus.on("log:err", function (e) {
             console.log("err:", e.data);
+          });
+
+          bus.on("process:childint", function (packet) {
+            count++;
           });
         });
 
