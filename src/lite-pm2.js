@@ -65,13 +65,39 @@ pm2.connect(true, function (err) {
         script: "boot.js",
         name: service || "lite",
         exec_mode: "cluster",
-        instances: 0,
-        output: "NULL",
+        instances: 3,
+        output: "/dev/stdout",
         error: "NULL",
         max_memory_restart: LIMIT,
       },
       function (err2, proc) {
         pm2.disconnect();
+
+        setInterval(() => {
+          pm2.list((e, ls) => {
+            if (e) {
+              return;
+            }
+            console.log("--publish cpu check event---");
+            ls.map((l) => {
+              pm2.sendDataToProcessId(
+                {
+                  // id of procces from "pm2 list" command or from pm2.list(errback) method
+                  id: l.pm_id,
+
+                  // process:msg will be send as 'message' on target process
+                  type: "lite:cpu-check",
+
+                  // Data to be sent
+                  data: 777,
+
+                  topic: true,
+                },
+                function (err, res) {}
+              );
+            });
+          });
+        }, 3000);
 
         pm2.launchBus((err, bus) => {
           bus.on("log:err", function (e) {
